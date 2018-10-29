@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from scipy.spatial import KDTree
-import time
 class Node:
     def __init__(self, value = None, left = None, right = None):
         self.value = value
@@ -103,30 +102,32 @@ class kdtree:
         point = np.asarray(point)
         target = t
         tempdepth = depth
+        prevtarget = None
+        condition = 0
         while target.left or target.right:
             axis = tempdepth % self.k
             if point[axis] < target.value[axis]:
                 if target.left:
                     target = target.left
                 else:
+                    condition = 1
                     break
-            elif point[axis] == target.value[axis]:
-                break
             else:
                 if target.right:
                     target = target.right
                 else:
+                    condition = 1
                     break
             tempdepth += 1
             path.append(target)
-        if path:
+        if path and not condition:
             target = path.pop()
+            prevtarget = target
+            tempdepth -= 1
             currentbestpoint = target.value
             currentbestdistance = dis(point, target.value)
         while path:
-            prevtarget = target
             target = path.pop()
-            tempdepth -= 1
             if dis(point, target.value) < currentbestdistance:
                 currentbestpoint = target.value
                 currentbestdistance = dis(point, target.value)
@@ -139,8 +140,19 @@ class kdtree:
                     potentialbestpoint, potentialbestdistance = self.nn(point, target.right, tempdepth + 1)
                 if potentialbestdistance and potentialbestdistance < currentbestdistance:
                     currentbestpoint, currentbestdistance = potentialbestpoint, potentialbestdistance
+            prevtarget = target
+            tempdepth -= 1
         return currentbestpoint, currentbestdistance
             
                 
+### Example
 
-
+n = 1000
+k = 4
+data = np.random.normal(size = (n, k))
+kd1 = KDTree(data)
+kd2 = kdtree(data)
+res1 = kd1.query([0, 0,0,0])
+res2 = kd2.nn([0, 0,0,0], kd2.tree)
+print(res1[0], np.sqrt(res2[1]))
+print(kd1.data[res1[1]], res2[0])
